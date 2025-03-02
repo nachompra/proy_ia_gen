@@ -72,6 +72,14 @@
       margin-top: 20px;
       text-align: left;
     }
+    .kpi-summary {
+      margin-bottom: 20px;
+    }
+    .kpi-item {
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+    }
   </style>
 </head>
 <body>
@@ -222,16 +230,41 @@
       }
     }
 
-    function displayKPIs(message) {
-      // Separar y formatear cada KPI (se asume que comienzan con un dígito y un punto)
-      let paragraphs = message.split(/(?=\d+\.\s+)/);
-      let formattedOutput = paragraphs.map(p => {
-        let withBold = p.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-        return `<p>${withBold.trim()}</p>`;
-      }).join('');
+    function displayKPIs(responseString) {
+      let response;
+      try {
+        response = typeof responseString === "string" ? JSON.parse(responseString) : responseString;
+      } catch(e) {
+        console.error("Error al parsear la respuesta JSON:", e);
+        document.getElementById("kpiResponse").innerHTML = "<p>Error al procesar la respuesta.</p>";
+        return;
+      }
       
-      document.getElementById("kpiResponse").innerHTML = formattedOutput;
-      // Mostrar el contenedor de KPIs (step6)
+      let html = "";
+      
+      // Mostrar el resumen, si existe
+      if(response.summary) {
+        html += `<div class="kpi-summary">
+                   <h3>Resumen:</h3>
+                   <p>${response.summary}</p>
+                 </div>`;
+      }
+      
+      // Mostrar cada KPI
+      if(response.kpis && Array.isArray(response.kpis)) {
+        response.kpis.forEach((kpi, index) => {
+          html += `<div class="kpi-item">
+                     <h4>${index + 1}. ${kpi.name}</h4>
+                     <p><strong>Fórmula:</strong> ${kpi.formula}</p>
+                     <p>${kpi.description}</p>
+                   </div>`;
+        });
+      } else {
+        html += "<p>No se encontraron KPIs.</p>";
+      }
+      
+      document.getElementById("kpiResponse").innerHTML = html;
+      // Cambiar de paso para mostrar el resultado
       document.getElementById("step5").classList.remove("active");
       document.getElementById("step6").classList.add("active");
     }
@@ -241,7 +274,6 @@
       document.getElementById("step7").classList.add("active");
     }
 
-    // Función para procesar una nueva pregunta con el nuevo proyecto
     async function newQuestion() {
       try {
         document.getElementById("newLoadingSpinner").style.display = "block";
