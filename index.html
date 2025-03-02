@@ -97,24 +97,33 @@
       <button onclick="nextStep(3)">Next</button>
     </div>
     
-    <!-- Paso 4: Ingresar Project -->
+    <!-- Paso 4: Ingresar el primer Project -->
     <div id="step4" class="step">
       <input type="text" id="project" placeholder="Enter your Project" autocomplete="off">
       <button onclick="nextStep(4)">Next</button>
     </div>
     
-    <!-- Paso 5: Botón para guardar perfil y generar KPIs -->
+    <!-- Paso 5: Guardar perfil y generar KPIs (Pregunta 1) -->
     <div id="step5" class="step">
       <button id="sendProfileBtn" onclick="sendProfile()">Save Profile & Generate KPIs</button>
       <div class="loading" id="loadingSpinner">Generating KPIs... ⏳</div>
     </div>
     
-    <!-- Paso 6: Mostrar respuesta del LLM -->
+    <!-- Paso 6: Mostrar KPIs y opción para nueva pregunta -->
     <div id="step6" class="step">
       <h3>Your Custom KPIs:</h3>
       <div class="kpi-response" id="kpiResponse"></div>
+      <button onclick="showNewQuestion()">Ask Another Question</button>
       <button onclick="location.reload()">Start Over</button>
     </div>
+    
+    <!-- Paso 7: Ingresar nuevo Project para nueva pregunta -->
+    <div id="step7" class="step">
+      <input type="text" id="newProject" placeholder="Enter new Project" autocomplete="off">
+      <button onclick="newQuestion()">Generate KPIs for New Project</button>
+      <div class="loading" id="newLoadingSpinner">Generating KPIs... ⏳</div>
+    </div>
+    
   </div>
 
   <script>
@@ -154,10 +163,11 @@
 
     async function sendProfile() {
       try {
+        document.getElementById("loadingSpinner").style.display = "block";
         if (!id_user) await getUserId();
         profileData.id_user = id_user;
 
-        // 1. Enviar o actualizar el perfil
+        // 1. Guardar o actualizar el perfil
         const profileResponse = await fetch(`${API_BASE}/v1/profile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -168,7 +178,18 @@
           throw new Error(errorData.detail || 'Failed to save profile');
         }
 
-        // 2. Llamar al endpoint para generar la pregunta (prompt)
+        // 2. Insertar el primer proyecto usando /v1/project
+        const projectResponse = await fetch(`${API_BASE}/v1/project`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_user: id_user, project: profileData.project }),
+        });
+        if (!projectResponse.ok) {
+          const errorData = await projectResponse.json();
+          throw new Error(errorData.detail || 'Failed to add project');
+        }
+
+        // 3. Generar la pregunta (prompt) basada en el proyecto recién insertado
         const genQuestionResponse = await fetch(`${API_BASE}/v1/generate-question`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -181,7 +202,7 @@
         const genQuestionData = await genQuestionResponse.json();
         console.log("Generated question:", genQuestionData.question);
 
-        // 3. Llamar al endpoint para enviar la pregunta al LLM y obtener la respuesta
+        // 4. Llamar al endpoint para enviar la pregunta al LLM y obtener KPIs
         const askResponse = await fetch(`${API_BASE}/v1/ask`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -192,26 +213,86 @@
           throw new Error(errorData.detail || 'Failed to generate KPIs');
         }
         const askData = await askResponse.json();
-
-        // Separar la respuesta en párrafos: cada KPI (numerado) en su propio <p>
-        // Se asume que cada KPI comienza con un dígito seguido de un punto
-        let output = askData.message;
-        let paragraphs = output.split(/(?=\d+\.\s+)/);
-        let formattedOutput = paragraphs.map(p => {
-          // Reemplazar la sintaxis markdown de negritas por <strong>
-          let withBold = p.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-          return `<p>${withBold.trim()}</p>`;
-        }).join('');
-
-        // Mostrar la respuesta en el frontend con el formateo
-        document.getElementById("step5").classList.remove("active");
-        document.getElementById("step6").classList.add("active");
-        document.getElementById("kpiResponse").innerHTML = formattedOutput;
+        displayKPIs(askData.message);
       } catch (error) {
         console.error("Error:", error);
         alert(`Operation failed: ${error.message}`);
       } finally {
         document.getElementById("loadingSpinner").style.display = "none";
+      }
+    }
+
+    function displayKPIs(message) {
+      // Separar y formatear cada KPI (se asume que comienzan con un dígito y un punto)
+      let paragraphs = message.split(/(?=\d+\.\s+)/);
+      let formattedOutput = paragraphs.map(p => {
+        let withBold = p.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+        return `<p>${withBold.trim()}</p>`;
+      }).join('');
+      
+      document.getElementById("kpiResponse").innerHTML = formattedOutput;
+      // Mostrar el contenedor de KPIs (step6)
+      document.getElementById("step5").classList.remove("active");
+      document.getElementById("step6").classList.add("active");
+    }
+
+    // Muestra el paso para realizar una nueva pregunta (nuevo proyecto)
+    function showNewQuestion() {
+      document.getElementById("step7").classList.add("active");
+    }
+
+    // Función para procesar una nueva pregunta con el nuevo proyecto
+    async function newQuestion() {
+      try {
+        document.getElementById("newLoadingSpinner").style.display = "block";
+        let newProjectValue = document.getElementById("newProject").value.trim();
+        if (!newProjectValue) { alert("Please enter a new project."); return; }
+        
+        // 1. Insertar el nuevo proyecto
+        const projectResponse = await fetch(`${API_BASE}/v1/project`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_user: id_user, project: newProjectValue }),
+        });
+        if (!projectResponse.ok) {
+          const errorData = await projectResponse.json();
+          throw new Error(errorData.detail || 'Failed to add new project');
+        }
+        
+        // 2. Generar la nueva pregunta basada en el nuevo proyecto
+        const genQuestionResponse = await fetch(`${API_BASE}/v1/generate-question`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_user: id_user, question: "" }),
+        });
+        if (!genQuestionResponse.ok) {
+          const errorData = await genQuestionResponse.json();
+          throw new Error(errorData.detail || 'Failed to generate new question');
+        }
+        const genQuestionData = await genQuestionResponse.json();
+        console.log("Generated new question:", genQuestionData.question);
+        
+        // 3. Llamar al endpoint para obtener la respuesta del LLM
+        const askResponse = await fetch(`${API_BASE}/v1/ask`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_user: id_user, question: "Generate KPIs" }),
+        });
+        if (!askResponse.ok) {
+          const errorData = await askResponse.json();
+          throw new Error(errorData.detail || 'Failed to generate new KPIs');
+        }
+        const askData = await askResponse.json();
+        displayKPIs(askData.message);
+        
+        // Ocultar el paso de nueva pregunta y limpiar el input
+        document.getElementById("step7").classList.remove("active");
+        document.getElementById("newProject").value = "";
+      } catch (error) {
+        console.error("Error:", error);
+        alert(`Operation failed: ${error.message}`);
+      } finally {
+        document.getElementById("newLoadingSpinner").style.display = "none";
       }
     }
   </script>
