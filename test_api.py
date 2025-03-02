@@ -1,6 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
 from main import app # Asumiendo que tu aplicación se guarda en "api.py"
+import mistralai
+from mistralai.client import MistralClient
 
 client = TestClient(app)
 
@@ -69,3 +71,50 @@ def test_generate_question():
     assert "question" in data
     # Comprobamos que el prompt generado contenga palabras clave (por ejemplo, "KPIs")
     assert "KPIs" in data["question"]
+
+def test_ask_mistral(monkeypatch):
+    # Get user ID
+    response = client.get("/api/user")
+    user_id = int(response.json()["id_user"])
+    
+    # Create profile and project
+    profile_data = {
+        "id_user": user_id,
+        "position": "Analyst",
+        "department": "Operations",
+        "sector": "Logistics",
+        "project": "Project D"
+    }
+    client.post("/v1/profile", json=profile_data)
+    client.post("/v1/project", json={"id_user": user_id, "project": "Project D"})
+    client.post("/v1/generate-question", json={"id_user": user_id, "question": ""})
+    
+    # Mock Mistral Client Structure
+    class MockMessage:
+        def __init__(self):
+            self.content = "1. **Test KPI**: Dummy formula"
+
+    class MockChoice:
+        def __init__(self):
+            self.message = MockMessage()
+
+    class MockChat:
+        def create(self, *args, **kwargs):
+            response = type("Response", (), {"choices": [MockChoice()]})
+            return response
+
+    class MockMistralClient:
+        def __init__(self, *args, **kwargs):
+            self.chat = MockChat()  # Attach the chat.create method
+
+    # Replace the real client with our mock
+    monkeypatch.setattr("mistralai.client.MistralClient", MockMistralClient)
+    
+    # Test the endpoint
+    response = client.post("/v1/ask", json={"id_user": user_id, "question": "Generate KPIs"})
+    
+    # Assertions
+    assert response.status_code == 200
+    data = response.json()
+    assert "message" in data
+    assert "KPI" in data["message"]
