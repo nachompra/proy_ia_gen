@@ -76,11 +76,11 @@ def startup_event():
 
 # Endpoint para generar un id de usuario y crear las entradas básicas en session y profile
 @app.get("/api/user")
-def get_user_ip(request: Request):
+def get_user_id(request: Request):
     try:
         cursor.execute("SELECT FLOOR(RAND() * (999999 - 1 + 1) + 1) AS id_user")
         result = cursor.fetchone()
-        id_user = str(result['id_user'])
+        id_user = int(result['id_user'])
 
         # Crear una nueva sesión y un perfil vacío para el usuario
         cursor.execute("INSERT INTO session (id_user) VALUES (%s)", (id_user,))
