@@ -1,219 +1,220 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mistral AI Chat</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f0f2f5;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .new-chat-btn {
-            padding: 10px 20px;
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .new-chat-btn:hover {
-            background-color: #bb2d3b;
-        }
-
-        .chat-section {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .conversation {
-            height: 500px;
-            overflow-y: auto;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            padding: 15px;
-            border-radius: 8px;
-        }
-
-        .message {
-            margin-bottom: 15px;
-            padding: 10px;
-            border-radius: 5px;
-        }
-
-        .user-message {
-            background-color: #e3f2fd;
-            margin-left: 20%;
-        }
-
-        .bot-message {
-            background-color: #f5f5f5;
-            margin-right: 20%;
-            white-space: pre-wrap;
-        }
-
-        .bot-message ol {
-            margin: 10px 0;
-            padding-left: 30px;
-        }
-
-        .bot-message li {
-            margin-bottom: 8px;
-            line-height: 1.5;
-        }
-
-        .bot-message strong {
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
-        .bot-message code {
-            background-color: #f4f4f4;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-family: monospace;
-        }
-
-        form {
-            display: flex;
-            gap: 10px;
-        }
-
-        input[type="text"] {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-
-        button[type="submit"] {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        button[type="submit"]:hover {
-            background-color: #0056b3;
-        }
-    </style>
-    <!-- Markdown processing libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+  <meta charset="UTF-8">
+  <title>Setup Profile & Generate KPIs</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f7fc;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 600px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin: 20px;
+    }
+    .app-title {
+      text-align: center;
+      font-size: 28px;
+      color: #007bff;
+      margin-bottom: 20px;
+    }
+    .step {
+      display: none;
+      text-align: center;
+    }
+    .step.active {
+      display: block;
+    }
+    input[type="text"] {
+      width: 80%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .loading {
+      display: none;
+      color: #007bff;
+      margin-top: 20px;
+      text-align: center;
+    }
+    .kpi-response {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+      text-align: left;
+    }
+  </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Mistral AI Chat</h1>
-        <button id="newChatButton" class="new-chat-btn">New Chat</button>
+  <div class="container">
+    <!-- Título fijo de la aplicación -->
+    <div class="app-title">KPAI</div>
+    
+    <!-- Paso 1: Ingresar Position -->
+    <div id="step1" class="step active">
+      <input type="text" id="position" placeholder="Enter your Position" autocomplete="off">
+      <button onclick="nextStep(1)">Next</button>
     </div>
     
-    <div class="chat-section">
-        <div class="conversation" id="conversation">
-            <!-- Messages will be inserted here -->
-        </div>
-        <form id="chatForm">
-            <input type="text" id="questionInput" placeholder="Type your question here...">
-            <button type="submit">Send</button>
-        </form>
+    <!-- Paso 2: Ingresar Department -->
+    <div id="step2" class="step">
+      <input type="text" id="department" placeholder="Enter your Department" autocomplete="off">
+      <button onclick="nextStep(2)">Next</button>
     </div>
+    
+    <!-- Paso 3: Ingresar Sector -->
+    <div id="step3" class="step">
+      <input type="text" id="sector" placeholder="Enter your Sector" autocomplete="off">
+      <button onclick="nextStep(3)">Next</button>
+    </div>
+    
+    <!-- Paso 4: Ingresar Project -->
+    <div id="step4" class="step">
+      <input type="text" id="project" placeholder="Enter your Project" autocomplete="off">
+      <button onclick="nextStep(4)">Next</button>
+    </div>
+    
+    <!-- Paso 5: Botón para guardar perfil y generar KPIs -->
+    <div id="step5" class="step">
+      <button id="sendProfileBtn" onclick="sendProfile()">Save Profile & Generate KPIs</button>
+      <div class="loading" id="loadingSpinner">Generating KPIs... ⏳</div>
+    </div>
+    
+    <!-- Paso 6: Mostrar respuesta del LLM -->
+    <div id="step6" class="step">
+      <h3>Your Custom KPIs:</h3>
+      <div class="kpi-response" id="kpiResponse"></div>
+      <button onclick="location.reload()">Start Over</button>
+    </div>
+  </div>
 
-    <script>
-        // Configure markdown parser
-        marked.setOptions({
-            breaks: true,
-            highlight: function(code) {
-                return hljs.highlightAuto(code).value;
-            }
+  <script>
+    const API_BASE = "http://localhost:8000";
+    let profileData = {};
+    let id_user = null;
+
+    async function getUserId() {
+      const response = await fetch(`${API_BASE}/api/user`);
+      if (!response.ok) throw new Error('Failed to get user ID');
+      const data = await response.json();
+      id_user = data.id_user;
+    }
+
+    function nextStep(currentStep) {
+      let inputValue;
+      if (currentStep === 1) {
+        inputValue = document.getElementById("position").value.trim();
+        if (!inputValue) { alert("Please fill out the field."); return; }
+        profileData.position = inputValue;
+      } else if (currentStep === 2) {
+        inputValue = document.getElementById("department").value.trim();
+        if (!inputValue) { alert("Please fill out the field."); return; }
+        profileData.department = inputValue;
+      } else if (currentStep === 3) {
+        inputValue = document.getElementById("sector").value.trim();
+        if (!inputValue) { alert("Please fill out the field."); return; }
+        profileData.sector = inputValue;
+      } else if (currentStep === 4) {
+        inputValue = document.getElementById("project").value.trim();
+        if (!inputValue) { alert("Please fill out the field."); return; }
+        profileData.project = inputValue;
+      }
+      document.getElementById(`step${currentStep}`).classList.remove("active");
+      document.getElementById(`step${currentStep + 1}`).classList.add("active");
+    }
+
+    async function sendProfile() {
+      try {
+        if (!id_user) await getUserId();
+        profileData.id_user = id_user;
+
+        // 1. Enviar o actualizar el perfil
+        const profileResponse = await fetch(`${API_BASE}/v1/profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profileData),
         });
-
-        const API_BASE = 'http://localhost:8000';
-
-        // New Chat functionality
-        document.getElementById('newChatButton').addEventListener('click', () => {
-            document.getElementById('conversation').innerHTML = '';
-            document.getElementById('questionInput').value = '';
-            document.getElementById('questionInput').focus();
-        });
-
-        async function postQuestion(question) {
-            try {
-                const response = await fetch(`${API_BASE}/v1/ask`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ question })
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.detail || 'Unknown server error');
-                }
-                
-                return await response.json();
-                
-            } catch (error) {
-                console.error('Request failed:', error);
-                return { message: `Error: ${error.message}` };
-            }
+        if (!profileResponse.ok) {
+          const errorData = await profileResponse.json();
+          throw new Error(errorData.detail || 'Failed to save profile');
         }
 
-        function addMessageToConversation(question, answer) {
-            const conversation = document.getElementById('conversation');
-            
-            // Add user question
-            const userDiv = document.createElement('div');
-            userDiv.className = 'message user-message';
-            userDiv.textContent = `You: ${question}`;
-            conversation.appendChild(userDiv);
-            
-            // Add bot response with markdown parsing
-            const botDiv = document.createElement('div');
-            botDiv.className = 'message bot-message';
-            const cleanAnswer = DOMPurify.sanitize(marked.parse(answer));
-            botDiv.innerHTML = `Bot: ${cleanAnswer}`;
-            conversation.appendChild(botDiv);
-            
-            // Scroll to bottom
-            conversation.scrollTop = conversation.scrollHeight;
-        }
-
-        document.getElementById('chatForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const input = document.getElementById('questionInput');
-            const question = input.value.trim();
-            
-            if (!question) return;
-
-            input.disabled = true;
-            try {
-                const response = await postQuestion(question);
-                addMessageToConversation(question, response.message);
-                input.value = '';
-            } finally {
-                input.disabled = false;
-                input.focus();
-            }
+        // 2. Llamar al endpoint para generar la pregunta (prompt)
+        const genQuestionResponse = await fetch(`${API_BASE}/v1/generate-question`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_user: id_user, question: "" }),
         });
-    </script>
+        if (!genQuestionResponse.ok) {
+          const errorData = await genQuestionResponse.json();
+          throw new Error(errorData.detail || 'Failed to generate question');
+        }
+        const genQuestionData = await genQuestionResponse.json();
+        console.log("Generated question:", genQuestionData.question);
+
+        // 3. Llamar al endpoint para enviar la pregunta al LLM y obtener la respuesta
+        const askResponse = await fetch(`${API_BASE}/v1/ask`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_user: id_user, question: "Generate KPIs" }),
+        });
+        if (!askResponse.ok) {
+          const errorData = await askResponse.json();
+          throw new Error(errorData.detail || 'Failed to generate KPIs');
+        }
+        const askData = await askResponse.json();
+
+        // Separar la respuesta en párrafos: cada KPI (numerado) en su propio <p>
+        // Se asume que cada KPI comienza con un dígito seguido de un punto
+        let output = askData.message;
+        let paragraphs = output.split(/(?=\d+\.\s+)/);
+        let formattedOutput = paragraphs.map(p => {
+          // Reemplazar la sintaxis markdown de negritas por <strong>
+          let withBold = p.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+          return `<p>${withBold.trim()}</p>`;
+        }).join('');
+
+        // Mostrar la respuesta en el frontend con el formateo
+        document.getElementById("step5").classList.remove("active");
+        document.getElementById("step6").classList.add("active");
+        document.getElementById("kpiResponse").innerHTML = formattedOutput;
+      } catch (error) {
+        console.error("Error:", error);
+        alert(`Operation failed: ${error.message}`);
+      } finally {
+        document.getElementById("loadingSpinner").style.display = "none";
+      }
+    }
+  </script>
 </body>
 </html>
+
