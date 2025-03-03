@@ -27,6 +27,7 @@
       font-size: 28px;
       color: #007bff;
       margin-bottom: 20px;
+      letter-spacing: 13px;
     }
     .step {
       display: none;
@@ -84,40 +85,40 @@
 </head>
 <body>
   <div class="container">
-    <!-- Título fijo de la aplicación -->
+    <!-- Fixed tittle for app -->
     <div class="app-title">KPAI</div>
     
-    <!-- Paso 1: Ingresar Position -->
+    <!-- Step 1: Position -->
     <div id="step1" class="step active">
       <input type="text" id="position" placeholder="Enter your Position" autocomplete="off">
       <button onclick="nextStep(1)">Next</button>
     </div>
     
-    <!-- Paso 2: Ingresar Department -->
+    <!-- PStep 2: Department -->
     <div id="step2" class="step">
       <input type="text" id="department" placeholder="Enter your Department" autocomplete="off">
       <button onclick="nextStep(2)">Next</button>
     </div>
     
-    <!-- Paso 3: Ingresar Sector -->
+    <!-- Step 3: Sector -->
     <div id="step3" class="step">
       <input type="text" id="sector" placeholder="Enter your Sector" autocomplete="off">
       <button onclick="nextStep(3)">Next</button>
     </div>
     
-    <!-- Paso 4: Ingresar el primer Project -->
+    <!-- Step 4: Project -->
     <div id="step4" class="step">
       <input type="text" id="project" placeholder="Enter your Project" autocomplete="off">
       <button onclick="nextStep(4)">Next</button>
     </div>
     
-    <!-- Paso 5: Guardar perfil y generar KPIs (Pregunta 1) -->
+    <!-- Step 5: Save Profile and Generate KPIs -->
     <div id="step5" class="step">
       <button id="sendProfileBtn" onclick="sendProfile()">Save Profile & Generate KPIs</button>
       <div class="loading" id="loadingSpinner">Generating KPIs... ⏳</div>
     </div>
     
-    <!-- Paso 6: Mostrar KPIs y opción para nueva pregunta -->
+    <!-- Step 6: Show Answer -->
     <div id="step6" class="step">
       <h3>Your Custom KPIs:</h3>
       <div class="kpi-response" id="kpiResponse"></div>
@@ -125,7 +126,7 @@
       <button onclick="location.reload()">Start Over</button>
     </div>
     
-    <!-- Paso 7: Ingresar nuevo Project para nueva pregunta -->
+    <!-- Step 7: Any further assistance? -->
     <div id="step7" class="step">
       <input type="text" id="newProject" placeholder="Enter new Project" autocomplete="off">
       <button onclick="newQuestion()">Generate KPIs for New Project</button>
@@ -175,7 +176,7 @@
         if (!id_user) await getUserId();
         profileData.id_user = id_user;
 
-        // 1. Guardar o actualizar el perfil
+        // 1. Save or update Profile
         const profileResponse = await fetch(`${API_BASE}/v1/profile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -186,7 +187,7 @@
           throw new Error(errorData.detail || 'Failed to save profile');
         }
 
-        // 2. Insertar el primer proyecto usando /v1/project
+        // 2. Insert Project using usando /v1/project
         const projectResponse = await fetch(`${API_BASE}/v1/project`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -197,7 +198,7 @@
           throw new Error(errorData.detail || 'Failed to add project');
         }
 
-        // 3. Generar la pregunta (prompt) basada en el proyecto recién insertado
+        // 3. Generate prompt
         const genQuestionResponse = await fetch(`${API_BASE}/v1/generate-question`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -210,7 +211,7 @@
         const genQuestionData = await genQuestionResponse.json();
         console.log("Generated question:", genQuestionData.question);
 
-        // 4. Llamar al endpoint para enviar la pregunta al LLM y obtener KPIs
+        // 4. Call ask endpoint to send question
         const askResponse = await fetch(`${API_BASE}/v1/ask`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -242,20 +243,19 @@
       
       let html = "";
       
-      // Mostrar el resumen, si existe
+      // Show summary
       if(response.summary) {
         html += `<div class="kpi-summary">
-                   <h3>Resumen:</h3>
-                   <p>${response.summary}</p>
-                 </div>`;
+                  <p>${response.summary}</p>
+                </div>`;
       }
       
-      // Mostrar cada KPI
+      // Show each KPI
       if(response.kpis && Array.isArray(response.kpis)) {
         response.kpis.forEach((kpi, index) => {
           html += `<div class="kpi-item">
                      <h4>${index + 1}. ${kpi.name}</h4>
-                     <p><strong>Fórmula:</strong> ${kpi.formula}</p>
+                     <p><strong>Calculation:</strong> ${kpi.formula}</p>
                      <p>${kpi.description}</p>
                    </div>`;
         });
@@ -264,12 +264,12 @@
       }
       
       document.getElementById("kpiResponse").innerHTML = html;
-      // Cambiar de paso para mostrar el resultado
+      // Change step
       document.getElementById("step5").classList.remove("active");
       document.getElementById("step6").classList.add("active");
     }
 
-    // Muestra el paso para realizar una nueva pregunta (nuevo proyecto)
+    // Show last step in prompt making to ask about a new project
     function showNewQuestion() {
       document.getElementById("step7").classList.add("active");
     }
@@ -280,7 +280,7 @@
         let newProjectValue = document.getElementById("newProject").value.trim();
         if (!newProjectValue) { alert("Please enter a new project."); return; }
         
-        // 1. Insertar el nuevo proyecto
+        // 1. Innsert new project
         const projectResponse = await fetch(`${API_BASE}/v1/project`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -291,7 +291,7 @@
           throw new Error(errorData.detail || 'Failed to add new project');
         }
         
-        // 2. Generar la nueva pregunta basada en el nuevo proyecto
+        // 2. Generate new prompt
         const genQuestionResponse = await fetch(`${API_BASE}/v1/generate-question`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -304,7 +304,7 @@
         const genQuestionData = await genQuestionResponse.json();
         console.log("Generated new question:", genQuestionData.question);
         
-        // 3. Llamar al endpoint para obtener la respuesta del LLM
+        // 3. Get LLM Answer
         const askResponse = await fetch(`${API_BASE}/v1/ask`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -317,7 +317,7 @@
         const askData = await askResponse.json();
         displayKPIs(askData.message);
         
-        // Ocultar el paso de nueva pregunta y limpiar el input
+        // Hide last step and clean previous input
         document.getElementById("step7").classList.remove("active");
         document.getElementById("newProject").value = "";
       } catch (error) {
@@ -330,4 +330,3 @@
   </script>
 </body>
 </html>
-

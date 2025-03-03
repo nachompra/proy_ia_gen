@@ -98,11 +98,11 @@ except Exception as e:
 @app.get("/api/user")
 def get_user_id(request: Request):
     try:
-        cursor.execute("SELECT FLOOR(RAND() * 999999) + 1 AS id_user")  # Simplificado
+        cursor.execute("SELECT FLOOR(RAND() * 999999) + 1 AS id_user")  # RAandom user ID
         result = cursor.fetchone()
         if result:
             id_user = int(result['id_user'])
-            # Insertar en tabla user primero
+            
             cursor.execute("INSERT INTO user (id_user) VALUES (%s)", (id_user,))
             cursor.execute("INSERT INTO session (id_user) VALUES (%s)", (id_user,))
             cursor.execute("INSERT INTO profile (id_user) VALUES (%s)", (id_user,))
@@ -202,7 +202,7 @@ def ask_mistral(req: QuestionRequest):
         if not question_data:
             raise HTTPException(status_code=404, detail="No question found")
 
-        # Obtener el contexto del proyecto
+        
         cursor.execute("""
             SELECT p.position, p.department, p.sector, pr.project 
             FROM profile p
@@ -212,7 +212,7 @@ def ask_mistral(req: QuestionRequest):
         """, (id_user,))
         context = cursor.fetchone()
 
-        # Generar el prompt formateado a partir del contexto
+        
         prompt_str = kpi_prompt.format(
             position=context['position'],
             department=context['department'],
@@ -221,17 +221,17 @@ def ask_mistral(req: QuestionRequest):
             format_instructions=parser.get_format_instructions()
         )
 
-        # Procesar a través de LangChain pasando un string en lugar de un diccionario
+        
         result = chain.invoke(prompt_str)
 
-        # Almacenar la respuesta
+        
         cursor.execute(
             "INSERT INTO answer (id_question, id, answer) VALUES (%s, %s, %s)",
             (question_data["id_question"], session_id, result.json())
         )
         db.commit()
 
-        # Retornar la respuesta con la clave "message" para que el front-end la encuentre
+
         return {"message": result.json()}
     except Exception as e:
         db.rollback()
@@ -247,4 +247,4 @@ def get_sessions():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-app.mount("/", StaticFiles(directory=".", html=True), name="static")
+app.mount("/", StaticFiles(directory=".", html=True), name="static")        
