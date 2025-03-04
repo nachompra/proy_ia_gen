@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from main import app # Asumiendo que tu aplicación se guarda en "api.py"
+from main import app 
 import mistralai
 from mistralai.client import MistralClient
 from pydantic import BaseModel
