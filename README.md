@@ -1,5 +1,5 @@
 
-![LOGO](utilities/LOGO.png)
+
 
 ## Overview
 
