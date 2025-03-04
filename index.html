@@ -1,0 +1,332 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Setup Profile & Generate KPIs</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f7fc;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 600px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin: 20px;
+    }
+    .app-title {
+      text-align: center;
+      font-size: 28px;
+      color: #007bff;
+      margin-bottom: 20px;
+      letter-spacing: 13px;
+    }
+    .step {
+      display: none;
+      text-align: center;
+    }
+    .step.active {
+      display: block;
+    }
+    input[type="text"] {
+      width: 80%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .loading {
+      display: none;
+      color: #007bff;
+      margin-top: 20px;
+      text-align: center;
+    }
+    .kpi-response {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+      text-align: left;
+    }
+    .kpi-summary {
+      margin-bottom: 20px;
+    }
+    .kpi-item {
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Fixed tittle for app -->
+    <div class="app-title">KPAI</div>
+    
+    <!-- Step 1: Position -->
+    <div id="step1" class="step active">
+      <input type="text" id="position" placeholder="Enter your Position" autocomplete="off">
+      <button onclick="nextStep(1)">Next</button>
+    </div>
+    
+    <!-- PStep 2: Department -->
+    <div id="step2" class="step">
+      <input type="text" id="department" placeholder="Enter your Department" autocomplete="off">
+      <button onclick="nextStep(2)">Next</button>
+    </div>
+    
+    <!-- Step 3: Sector -->
+    <div id="step3" class="step">
+      <input type="text" id="sector" placeholder="Enter your Sector" autocomplete="off">
+      <button onclick="nextStep(3)">Next</button>
+    </div>
+    
+    <!-- Step 4: Project -->
+    <div id="step4" class="step">
+      <input type="text" id="project" placeholder="Enter your Project" autocomplete="off">
+      <button onclick="nextStep(4)">Next</button>
+    </div>
+    
+    <!-- Step 5: Save Profile and Generate KPIs -->
+    <div id="step5" class="step">
+      <button id="sendProfileBtn" onclick="sendProfile()">Save Profile & Generate KPIs</button>
+      <div class="loading" id="loadingSpinner">Generating KPIs... ⏳</div>
+    </div>
+    
+    <!-- Step 6: Show Answer -->
+    <div id="step6" class="step">
+      <h3>Your Custom KPIs:</h3>
+      <div class="kpi-response" id="kpiResponse"></div>
+      <button onclick="showNewQuestion()">Ask Another Question</button>
+      <button onclick="location.reload()">Start Over</button>
+    </div>
+    
+    <!-- Step 7: Any further assistance? -->
+    <div id="step7" class="step">
+      <input type="text" id="newProject" placeholder="Enter new Project" autocomplete="off">
+      <button onclick="newQuestion()">Generate KPIs for New Project</button>
+      <div class="loading" id="newLoadingSpinner">Generating KPIs... ⏳</div>
+    </div>
+    
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:8000";
+    let profileData = {};
+    let id_user = null;
+
+    async function getUserId() {
+      const response = await fetch(`${API_BASE}/api/user`);
+      if (!response.ok) throw new Error('Failed to get user ID');
+      const data = await response.json();
+      id_user = data.id_user;
+    }
+
+    function nextStep(currentStep) {
+      let inputValue;
+      if (currentStep === 1) {
+        inputValue = document.getElementById("position").value.trim();
+        if (!inputValue) { alert("Please fill out the field."); return; }
+        profileData.position = inputValue;
+      } else if (currentStep === 2) {
+        inputValue = document.getElementById("department").value.trim();
+        if (!inputValue) { alert("Please fill out the field."); return; }
+        profileData.department = inputValue;
+      } else if (currentStep === 3) {
+        inputValue = document.getElementById("sector").value.trim();
+        if (!inputValue) { alert("Please fill out the field."); return; }
+        profileData.sector = inputValue;
+      } else if (currentStep === 4) {
+        inputValue = document.getElementById("project").value.trim();
+        if (!inputValue) { alert("Please fill out the field."); return; }
+        profileData.project = inputValue;
+      }
+      document.getElementById(`step${currentStep}`).classList.remove("active");
+      document.getElementById(`step${currentStep + 1}`).classList.add("active");
+    }
+
+    async function sendProfile() {
+      try {
+        document.getElementById("loadingSpinner").style.display = "block";
+        if (!id_user) await getUserId();
+        profileData.id_user = id_user;
+
+        // 1. Save or update Profile
+        const profileResponse = await fetch(`${API_BASE}/v1/profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profileData),
+        });
+        if (!profileResponse.ok) {
+          const errorData = await profileResponse.json();
+          throw new Error(errorData.detail || 'Failed to save profile');
+        }
+
+        // 2. Insert Project using usando /v1/project
+        const projectResponse = await fetch(`${API_BASE}/v1/project`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_user: id_user, project: profileData.project }),
+        });
+        if (!projectResponse.ok) {
+          const errorData = await projectResponse.json();
+          throw new Error(errorData.detail || 'Failed to add project');
+        }
+
+        // 3. Generate prompt
+        const genQuestionResponse = await fetch(`${API_BASE}/v1/generate-question`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_user: id_user, question: "" }),
+        });
+        if (!genQuestionResponse.ok) {
+          const errorData = await genQuestionResponse.json();
+          throw new Error(errorData.detail || 'Failed to generate question');
+        }
+        const genQuestionData = await genQuestionResponse.json();
+        console.log("Generated question:", genQuestionData.question);
+
+        // 4. Call ask endpoint to send question
+        const askResponse = await fetch(`${API_BASE}/v1/ask`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_user: id_user, question: "Generate KPIs" }),
+        });
+        if (!askResponse.ok) {
+          const errorData = await askResponse.json();
+          throw new Error(errorData.detail || 'Failed to generate KPIs');
+        }
+        const askData = await askResponse.json();
+        displayKPIs(askData.message);
+      } catch (error) {
+        console.error("Error:", error);
+        alert(`Operation failed: ${error.message}`);
+      } finally {
+        document.getElementById("loadingSpinner").style.display = "none";
+      }
+    }
+
+    function displayKPIs(responseString) {
+      let response;
+      try {
+        response = typeof responseString === "string" ? JSON.parse(responseString) : responseString;
+      } catch(e) {
+        console.error("Error al parsear la respuesta JSON:", e);
+        document.getElementById("kpiResponse").innerHTML = "<p>Error al procesar la respuesta.</p>";
+        return;
+      }
+      
+      let html = "";
+      
+      // Show summary
+      if(response.summary) {
+        html += `<div class="kpi-summary">
+                  <p>${response.summary}</p>
+                </div>`;
+      }
+      
+      // Show each KPI
+      if(response.kpis && Array.isArray(response.kpis)) {
+        response.kpis.forEach((kpi, index) => {
+          html += `<div class="kpi-item">
+                     <h4>${index + 1}. ${kpi.name}</h4>
+                     <p><strong>Calculation:</strong> ${kpi.formula}</p>
+                     <p>${kpi.description}</p>
+                   </div>`;
+        });
+      } else {
+        html += "<p>No se encontraron KPIs.</p>";
+      }
+      
+      document.getElementById("kpiResponse").innerHTML = html;
+      // Change step
+      document.getElementById("step5").classList.remove("active");
+      document.getElementById("step6").classList.add("active");
+    }
+
+    // Show last step in prompt making to ask about a new project
+    function showNewQuestion() {
+      document.getElementById("step7").classList.add("active");
+    }
+
+    async function newQuestion() {
+      try {
+        document.getElementById("newLoadingSpinner").style.display = "block";
+        let newProjectValue = document.getElementById("newProject").value.trim();
+        if (!newProjectValue) { alert("Please enter a new project."); return; }
+        
+        // 1. Innsert new project
+        const projectResponse = await fetch(`${API_BASE}/v1/project`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_user: id_user, project: newProjectValue }),
+        });
+        if (!projectResponse.ok) {
+          const errorData = await projectResponse.json();
+          throw new Error(errorData.detail || 'Failed to add new project');
+        }
+        
+        // 2. Generate new prompt
+        const genQuestionResponse = await fetch(`${API_BASE}/v1/generate-question`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_user: id_user, question: "" }),
+        });
+        if (!genQuestionResponse.ok) {
+          const errorData = await genQuestionResponse.json();
+          throw new Error(errorData.detail || 'Failed to generate new question');
+        }
+        const genQuestionData = await genQuestionResponse.json();
+        console.log("Generated new question:", genQuestionData.question);
+        
+        // 3. Get LLM Answer
+        const askResponse = await fetch(`${API_BASE}/v1/ask`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_user: id_user, question: "Generate KPIs" }),
+        });
+        if (!askResponse.ok) {
+          const errorData = await askResponse.json();
+          throw new Error(errorData.detail || 'Failed to generate new KPIs');
+        }
+        const askData = await askResponse.json();
+        displayKPIs(askData.message);
+        
+        // Hide last step and clean previous input
+        document.getElementById("step7").classList.remove("active");
+        document.getElementById("newProject").value = "";
+      } catch (error) {
+        console.error("Error:", error);
+        alert(`Operation failed: ${error.message}`);
+      } finally {
+        document.getElementById("newLoadingSpinner").style.display = "none";
+      }
+    }
+  </script>
+</body>
+</html>
